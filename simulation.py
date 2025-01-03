@@ -7,12 +7,15 @@ failureTypes = {
 			"exponential": 		rf.ExponentialFailure,
 			"uniform": 		rf.UniformFailure,
 			"weibull":		rf.WeibullFailure,
-			"n_exponential": 	rf.MultipleExponential
+			"n_exponential": 	rf.ParallelExponentialFailure,
+			"exponential_fr":	rf.ExponentialFailureRecovery
 }	
 
-
+# Main function for simulation; needs maxRuns and maxTime to be specified in params, as well as failureType
 def simulate(params, coll, verbose = False):
-	print("Starting simulation with parameters", params)
+	"Simulate the run with params"
+
+	if verbose: print("Starting simulation with parameters", params)
 
 	distribution = params.distribution
 	maxRuns = params.maxRuns
@@ -35,14 +38,12 @@ def simulate(params, coll, verbose = False):
 
 		# Run the simulation until the maximum time and get number of failures
 		env.run(until = maxTime)
-		count = f.getCount()
-
+		
 		# Update all the statistics values by collecting this value
-		coll.collect(count) 
+		f.collect( coll )
 
-		if verbose: print("\tFailure count = %d" %count ) 
 		if verbose: print("Done run ", i, "\n")		
 	
-	print("Done simulation")
+	if verbose: print("Done simulation ", params)
 
 #End of simulate

@@ -21,13 +21,19 @@ class Collector:
 		for (statName, func) in self.statTable.items():
 			statValue = func(self.tempList)
 			self.stats[ name ][ statName ] = statValue	
-		
-	def print(self):
-		# For now, this just prints everything; TODO: make it __str__
+
+	def getRows(self):
+		"Return all the rows as a list"
+		return self.stats.keys()
+	
+	def __str__(self):
+		res = "--------------\n"
 		for (name, stat) in self.stats.items():
-			print(name)
+			res += str(name) + "\n"
 			for (statName, statValue) in stat.items():
-				print("\t", statName, " = ", statValue) 
+				res += "\t" + str(statName) +  " = " + str(statValue) + "\n"
+		res += "-------------\n"
+		return res 
 
 	def extract(self,stat_name):
 		# Extract all the statistics corresponding to statname

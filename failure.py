@@ -12,7 +12,8 @@ def plot_graph(sp, stats):
 
 	t = np.arange(sp.start_rate, sp.end_rate + sp.increment_rate, sp.increment_rate)
 
-	for statName in stats.keys():
+	statNames = stats.getRows()
+	for statName in statNames:
 
 		# Extract each of the statistics
 		values = stats.extract(statName)
@@ -40,7 +41,7 @@ def sweep_range(sp, stats):
 		stats.startRow(rate)
 
 		# Call the simulate function for the different runs with the rate parameter
-		sp.rate = rate  
+		sp.failure_rate = rate  
 		try:
 			simulation.simulate( sp, stats, sp.verbose )
 		except:
@@ -56,6 +57,7 @@ def sweep_range(sp, stats):
 
 # Begin main program
 if __name__=="__main__":
+
 	# Initialize the parameters and statistics
 	stats = collector.Collector( statsim.simpleStats )
 
@@ -63,7 +65,7 @@ if __name__=="__main__":
 	sweep_range(sp, stats)
 
 	# Print all the gathered statistics
-	stats.print()
+	print(stats)
 
 	# Plot the graph if needed
 	if sp.graph: plot_graph(sp, stats)

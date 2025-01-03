@@ -2,13 +2,15 @@
 # Simulation parameters
 
 start_rate = 0.1
-end_rate = 0.2
+end_rate = 1.0
 increment_rate = 0.1
-maxRuns = 10
+maxRuns = 100
 maxTime = 1000
-verbose = True
+verbose = False
 distribution = "n_exponential"
-processes = 10
-graph=False
+#recovery_rate = 10
+num_process = 10
+graph= False
+
 
 # End of simulation parameters

@@ -4,7 +4,9 @@ import statistics
 import numpy as np
 from functools import partial
 
-# Reusable function for confidence interval
+# TODO: Add more sophisticated functions for statistics including non-normal distributions
+
+# Reusable function for confidence interval assuming normal distribution
 def conf_interval(conf,data):
 	"Confidence interval computation assuming normal error distribution"
 	# conf represents the confidence interval. This returns a tuple.	
@@ -12,6 +14,8 @@ def conf_interval(conf,data):
 	return scistats.norm.interval(confidence=conf, 
                  loc=np.mean(data), 
                  scale=scistats.sem(data)) 
+
+# End of function
 
 # Statistics you want to collect - you can add to this list
 simpleStats = { 
