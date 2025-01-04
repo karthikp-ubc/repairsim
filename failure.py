@@ -42,8 +42,9 @@ def sweep_range(sp, stats):
 
 		# Call the simulate function for the different runs with the rate parameter
 		sp.failure_rate = rate  
+		
 		try:
-			simulation.simulate( sp, stats, sp.verbose )
+			simulation.simulate( sp, stats )
 		except:
 			raise NameError("Undefined parameter name")
 	

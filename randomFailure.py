@@ -13,9 +13,13 @@ class RandomProcess(object):
 		self.env = env
 		self.count = 0
 		self.waitTime = 0
-		self.debug = False
+		self.debug = params.verbose
 		self.name = name
-		self.action = env.process( self.run() )
+		
+	def setAction(self):
+		"Calls the run method and assigns it to action for simPy"
+		# NOTE: We're separating this from the constructor, as each derived class should only call it once
+		self.action = self.env.process( self.run() )
 
 	def setVerbose(self):
 		self.debug = True
@@ -29,7 +33,7 @@ class RandomProcess(object):
 
 	def arrivalTime(self):
 		"Abstract method to specify the distribution"
-		# Override this function if you want to change the distribution
+		# You must Override this function if you want to change the distribution
 		raise NotImplementedError("Abstract class cannot be instantiated")
 
 	def trigger(self):
@@ -38,26 +42,36 @@ class RandomProcess(object):
 		interarrival = self.arrivalTime()
 		return( self.env.timeout(interarrival) )
 
-	def updateStats(self, waitTime, count):
+	def updateStatistics(self, waitTime, count):
 		"Update the waitTime and count statistics"
-		# This can be overridden by derived classes
+		if self.debug: print("\t", self.name, " Updating stats : ", waitTime, count)
 		self.waitTime += waitTime
 		self.count += count
 	
 	def run(self):
 		"Main function that is called by env.process"
 		prevTime = self.env.now
-
+		if self.debug: print("Starting ", self.name)
+		
 		while (True):
-			yield( self.trigger() )
+
+			# Yield a trigger event by calling the trigger method
+			triggerEvent = self.trigger()
+			if self.debug: print("Yielding from ", self.name)
+			yield( triggerEvent )
+
+			# Update the statistics
+			if self.debug: print("Updating statistics: ", self.name)
 			elapsedTime = self.env.now - prevTime
-			self.updateStats(elapsedTime, 1)
+			self.updateStatistics(elapsedTime, 1)
 			prevTime = self.env.now
-			if self.debug: print("\t", self.name, " Time = %.2f" % self.env.now, "Count = %d" % self.count ) 
+
+			if self.debug: print("\tDone", self.name, " Time = %.2f" % self.env.now)
 
 	def collect(self, stats):
 		"Collect the statistics for the simulation run"
 		# Collect the statistics for average wait time per arrival
+		# This can be overridden by derived classes
 		stats.collect( self.waitTime / self.count )
 
 #End of class RandomProcess
@@ -195,42 +209,29 @@ class SequentialProcess(RandomProcess):
 	def __init__(self, env, params, name="Sequential"):
 		super().__init__(env, params, name)
 		self.sequence = params.sequence
-		self.num_stages = len(params.sequence)
+		self.currentIndex = 0	# current process Index in the sequence
+		self.currentProcess = self.sequence[ self.currentIndex ]	
 
-	def run(self):
-		"Main function that is called by env.process"
-		
-		prevTime = self.env.now
+	def trigger(self):
+		"Wrap the time to yield in a timeOut object and return it"
 
-		while (True):
-			
-			# Trigger each process in succession, yield its value and continue
-			for process in self.sequence:	
-				
-				# Trigger the event from each process and yield it
-				event = process.trigger()
-				if self.debug: print("Yielding from ", process, event)
-				yield( event )
+		# Iterate over the sequence. Return current process and update currentIndex to next cyclically
+		self.currentProcess = self.sequence[ self.currentIndex ]
+		self.currentIndex = (self.currentIndex + 1) % len(self.sequence)
 
-				# Update the statistics of elapsed time and count for the process
-				elapsedTime = self.env.now - prevTime
-				self.updateStats( process, elapsedTime, 1 )
-				prevTime = self.env.now
-			
-			# end for
-
-		# End of while
-
+		# Call the currentProcesse's trigger method to get the TimeOut object
+		return self.currentProcess.trigger()
+	
 	def __str__(self):
 		res = self.name + " sequential [ "
-		for process in self.processes:
+		for process in self.sequence:
 			res += str(process)
 		res += " ]"
 
-	def updateStats(self, process, waitTime, count):
+	def updateStatistics(self, waitTime, count):
 		"Function to update statistics for each process"
-		# The only reason we define it here is to override it in derived classes (FIXME)
-		super().updateStats(waitTime, count)
+		# Update the statistics for the current process (as defined inthe  trigger)
+		self.currentProcess.updateStatistics(waitTime, count)
 
 # End of class SequentialProcess
 
@@ -246,33 +247,43 @@ class ExponentialRecovery(ExponentialProcess):
 
 # Class that simulates a 2-stage failure and recovery process (both of which are exponential)
 # This derives from the Sequential Process class above
-class ExponentialFailureRecovery(SequentialProcess):
-	"Simulates a simple failure-recovery process with exponentially distributed times"
+class TwoStageFailureRecovery(SequentialProcess):
+	"Simulates a 2-stage  failure-recovery process with exponentially distributed times"
 
-	def __init__(self, env, params, name="Exp-Failure-Recovery"):
+	def __init__(self, env, params, name="2Exp-Failure-Recovery"):
 	
 		# Initialize the process sequence before calling the sequential process constructor
-		params.sequence = [ ExponentialFailure(env, params), ExponentialRecovery(env, params) ]
+		params.sequence = [ ExponentialFailure(env, params, "Fail"), ExponentialRecovery(env, params, "Recover") ]
 		super().__init__(env, params, name)
-
-		# Initialize statistics specific to failure recovery process
-		self.upTime = 0
-		self.downTime = 0
-		self.failCount = 0
-		self.recoveryCount = 0  							
-
-	def updateStats(self, process, elapsedTime, count):
-		# Update the statistics separately for failure and recovery processes
-		if process.name == "Exponential Failure":
-			self.upTime += elapsedTime
-			self.failCount += count
-		elif process.name == "Exponential Recovery":
-			self.downTime += elapsedTime			
-			self.recoveryCount += count
-		if self.debug: print(process, self.upTime, self.downTime, self.failCount, self.recoveryCount)
 
 	def collect(self, coll):
 		# Collect the fraction uptime (indicates availability)
-		coll.collect( self.upTime / (self.upTime + self.downTime) )
+		# FIXME: We should make this generic so it works on any number of processes
+		
+		upTime = self.sequence[0].waitTime
+		downTime = self.sequence[1].waitTime
+		coll.collect( upTime / (upTime + downTime) )
 
-#End of class ExponentialFailureRecovery 
+#End of class TwoStageFailureRecovery 
+
+# Class that simulates a 3-stage failure and recovery process (both of which are exponential)
+# This derives from the Sequential Process class above
+class ThreeStageFailureRecovery(SequentialProcess):
+	"Simulates a 3-stage failure-recovery-recovery process with exponentially distributed times"
+
+	def __init__(self, env, params, name="3Exp-Failure-Recovery"):
+	
+		# Initialize the process sequence before calling the sequential process constructor
+		# FIXME: Currently, both recovery processes have the same MTTR - we should make this configurable
+		params.sequence = [ ExponentialFailure(env, params, "Fail"), ExponentialRecovery(env, params, "Recover1"), ExponentialRecovery(env, params, "Recover2") ]
+		super().__init__(env, params, name)
+
+	def collect(self, coll):
+		# Collect the fraction uptime (indicates availability)
+		# FIXME: We should make this generic so it works on any number of processes
+		
+		upTime = self.sequence[0].waitTime
+		downTime = self.sequence[1].waitTime + self.sequence[2].waitTime
+		coll.collect( upTime / (upTime + downTime) )
+
+#End of class ThreeStageFailureRecovery 

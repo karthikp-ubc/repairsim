@@ -8,19 +8,20 @@ failureTypes = {
 			"uniform": 		rf.UniformFailure,
 			"weibull":		rf.WeibullFailure,
 			"n_exponential": 	rf.ParallelExponentialFailure,
-			"exponential_fr":	rf.ExponentialFailureRecovery
+			"exponential_fr":	rf.TwoStageFailureRecovery,
+			"exponential_frr":	rf.ThreeStageFailureRecovery
 }	
 
 # Main function for simulation; needs maxRuns and maxTime to be specified in params, as well as failureType
-def simulate(params, coll, verbose = False):
+def simulate(params, coll):
 	"Simulate the run with params"
 
-	if verbose: print("Starting simulation with parameters", params)
-
+	verbose = params.verbose 
 	distribution = params.distribution
 	maxRuns = params.maxRuns
 	maxTime = params.maxTime
 
+	if verbose: print("Starting simulation with parameters", params)
 	for i in range(maxRuns):
 		if verbose: print("Starting run ", i)
 		env = simpy.Environment()
@@ -31,10 +32,13 @@ def simulate(params, coll, verbose = False):
 		except: 
 			raise NameError("Unknown failure distribution " + str(distribution) )			
 
-		# Instantiate a class of the failureType specified
+		if verbose: print("Running simulation for : ", failureType)
+		
+		# Instantiate a class of the failureType specified and initialize its run method
 		f = failureType(env, params)
-
-		if verbose: f.setVerbose()
+		
+		# NOTE: We need to do this explicitly before calling the env.run method
+		f.setAction()
 
 		# Run the simulation until the maximum time and get number of failures
 		env.run(until = maxTime)
