@@ -7,9 +7,9 @@ increment_rate = 0.1
 maxRuns = 100
 maxTime = 1000
 verbose = False
-distribution = "n_exponential"
-#recovery_rate = 10
-num_process = 10
+distribution = "exponential_fr"
+recovery_rate = 0.1
+#num_process = 10
 graph= False
 
 
