@@ -35,20 +35,20 @@ class WeibullFailure(rp.WeibullProcess):
 #End of class WeibullFailure
 
 # Parallel exponential failure processeses
-class ParallelExponentialFailure(rp.ParallelProcess, ExponentialFailure):
+class ParallelExponentialFailure(rp.ParallelProcess):
 	"Simulates multiple parallel process failures each with an exponential failure distribution"
 
 	def __init__(self, env, params, name="N-Exponential"):
-		# NOTE: We call super only once here, though it should call both MultipleFailure and ExponentialFailure's init methods (Why?)
 		super().__init__(env, params, name)
 	
 		# Initialize the processes here
 		self.n = params.num_process
 		for i in range(self.n):
+			if self.debug: print(self.name, "Initializing exponential failure ", i)
 			process = ExponentialFailure(env, params)
 			process.name = process.name + " " + str(i)
 			self.processes.append( process )
-		# End for
+		if self.debug: print(self.name, "Processes ", self.processes)
 
 # End of class ParallelExponential	
 
@@ -66,10 +66,14 @@ class ExponentialRecovery(rp.ExponentialProcess):
 class TwoStageFailureRecovery(rp.SequentialProcess):
 	"Simulates a 2-stage  failure-recovery process with exponentially distributed times"
 
+	def initSequence(self, env, params):
+		"Initialize the sequence of stages"
+		params.sequence = [ ExponentialFailure(env, params), ExponentialRecovery(env, params) ]
+
 	def __init__(self, env, params, name="2Exp-Failure-Recovery"):
 	
 		# Initialize the process sequence before calling the sequential process constructor
-		params.sequence = [ ExponentialFailure(env, params, "Fail"), ExponentialRecovery(env, params, "Recover") ]
+		self.initSequence(env, params)
 		super().__init__(env, params, name)
 
 	def collect(self, coll):
@@ -83,14 +87,15 @@ class TwoStageFailureRecovery(rp.SequentialProcess):
 #End of class TwoStageFailureRecovery 
 
 # Class that simulates a 3-stage failure and recovery process (both of which are exponential)
-class ThreeStageFailureRecovery(rp.SequentialProcess):
+class ThreeStageFailureRecovery(TwoStageFailureRecovery):
 	"Simulates a 3-stage failure-recovery-recovery process with exponentially distributed times"
 
-	def __init__(self, env, params, name="3Exp-Failure-Recovery"):
-	
-		# Initialize the process sequence before calling the sequential process constructor
+	def initSequence(self, env, params):
+		"Initialize the sequence of stages"
 		# FIXME: Currently, both recovery processes have the same MTTR - we should make this configurable
 		params.sequence = [ ExponentialFailure(env, params, "Fail"), ExponentialRecovery(env, params, "Recover1"), ExponentialRecovery(env, params, "Recover2") ]
+
+	def __init__(self, env, params, name="3Exp-Failure-Recovery"):
 		super().__init__(env, params, name)
 
 	def collect(self, coll):
@@ -103,7 +108,16 @@ class ThreeStageFailureRecovery(rp.SequentialProcess):
 
 #End of class ThreeStageFailureRecovery
 
-# Class for n-stage Failures and m-stage Recovery, where n and m are parameters 
-class MultiStageFailureRecovery(rp.SequentialProcess):
-	pass
+# Class for n-parallel Failures and Recovery (it has two stages: parallel failure, followed by recovery)
+class ParallelFailureRecovery(TwoStageFailureRecovery):
+	"Simulates a multi-process failure and sequential recovery process"
 
+	def initSequence(self, env, params):
+		"Initialize the sequence of stages"
+		# FIXME: Currently, both recovery processes have the same MTTR - we should make this configurable
+		params.sequence = [ ParallelExponentialFailure(env, params), ExponentialRecovery(env, params) ]
+	
+	def __init__(self, env, params, name="Parallel-Failure-Recovery"):
+		super().__init__(env, params, name)
+
+# End of ParallelFailureRecovery	

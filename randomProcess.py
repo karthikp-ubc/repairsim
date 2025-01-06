@@ -29,7 +29,7 @@ class RandomProcess(object):
 		random.seed( seed )
 
 	def __str__(self):
-		return self.name + " "
+		return self.name
 
 	def arrivalTime(self):
 		"Abstract method to specify the distribution"
@@ -40,7 +40,9 @@ class RandomProcess(object):
 		"Emulates an event of the process at the arrivalTime"
 		# Generate interarrival times from arrivalTime abstract method and wraps it in a timeout object
 		interarrival = self.arrivalTime()
-		return( self.env.timeout(interarrival) )
+		timeoutEvent = self.env.timeout(interarrival) 
+		if self.debug: print("\t", self.name, "Triggering event ", timeoutEvent)
+		return timeoutEvent
 
 	def updateStatistics(self, waitTime, count):
 		"Update the waitTime and count statistics"
@@ -57,7 +59,7 @@ class RandomProcess(object):
 
 			# Yield a trigger event by calling the trigger method
 			triggerEvent = self.trigger()
-			if self.debug: print("Yielding from ", self.name)
+			if self.debug: print(self.name, "Yielding from ", self.name)
 			yield( triggerEvent )
 
 			# Update the statistics
@@ -66,7 +68,7 @@ class RandomProcess(object):
 			self.updateStatistics(elapsedTime, 1)
 			prevTime = self.env.now
 
-			if self.debug: print("\tDone", self.name, " Time = %.2f" % self.env.now)
+			if self.debug: print("Done", self.name, " Time = %.2f" % self.env.now)
 
 	def collect(self, stats):
 		"Collect the statistics for the simulation run"
@@ -130,23 +132,24 @@ class ParallelProcess(RandomProcess):
 
 	def trigger(self):
 		"Emulate triggering of events of any of the parallel processes"
-		
 		# Get the failures of each process as timeout events
 		events = [ ]
 		for process in self.processes:
 			events.append( process.trigger() )
 		
 		# Choose the first of the trigerring events
-		triggerEvent = AnyOf( self.env, events) 	
-		# if self.debug: print(triggerEvent)
+		if self.debug: print(self.name, "Choosing the first of parallel process's events ", events)	
+		firstEvent = AnyOf( self.env, events) 	
+		if self.debug: print(self.name, "Triggering event ", firstEvent)
 		
-		return( triggerEvent )
+		return( firstEvent )
 
 	def __str__(self):
 		res = self.name + " parallel [ "
 		for process in self.processes:
-			res += str(process)
+			res += str(process) + " , "
 		res += " ]"
+		return res
 
 # End of class ParallelProcess
 
@@ -166,15 +169,19 @@ class SequentialProcess(RandomProcess):
 		# Iterate over the sequence. Return current process and update currentIndex to next cyclically
 		self.currentProcess = self.sequence[ self.currentIndex ]
 		self.currentIndex = (self.currentIndex + 1) % len(self.sequence)
+		if self.debug: print(self.name, "Choosing process ", self.currentProcess)
 
 		# Call the currentProcesse's trigger method to get the TimeOut object
-		return self.currentProcess.trigger()
+		currentEvent = self.currentProcess.trigger()
+		if self.debug: print(self.name, "Trigerring event ", currentEvent)
+		return currentEvent
 	
 	def __str__(self):
 		res = self.name + " sequential [ "
 		for process in self.sequence:
 			res += str(process)
 		res += " ]"
+		return res
 
 	def updateStatistics(self, waitTime, count):
 		"Function to update statistics for each process"
@@ -183,4 +190,4 @@ class SequentialProcess(RandomProcess):
 
 # End of class SequentialProcess
 
-
+# TODO: Add a process that requires ALL its subprocesses to finish before it does
