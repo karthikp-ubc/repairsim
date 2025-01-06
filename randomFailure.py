@@ -286,4 +286,9 @@ class ThreeStageFailureRecovery(SequentialProcess):
 		downTime = self.sequence[1].waitTime + self.sequence[2].waitTime
 		coll.collect( upTime / (upTime + downTime) )
 
-#End of class ThreeStageFailureRecovery 
+#End of class ThreeStageFailureRecovery
+
+# Class for n-stage Failures and m-stage Recovery, where n and m are parameters 
+class ThreeStageFailureRecovery(SequentialProcess):
+	pass
+
