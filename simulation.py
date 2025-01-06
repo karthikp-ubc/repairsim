@@ -16,12 +16,16 @@ failureTypes = {
 def simulate(params, coll):
 	"Simulate the run with params"
 
+	# Initialize the overall simulation parameters first
 	verbose = params.verbose 
 	distribution = params.distribution
 	maxRuns = params.maxRuns
 	maxTime = params.maxTime
 
 	if verbose: print("Starting simulation with parameters", params)
+	
+	# Run the simulations each for a total of maxRun times 
+	# FIXME: Make this configurable based on the confidence intervals
 	for i in range(maxRuns):
 		if verbose: print("Starting run ", i)
 		env = simpy.Environment()
@@ -40,10 +44,10 @@ def simulate(params, coll):
 		# NOTE: We need to do this explicitly before calling the env.run method
 		f.setAction()
 
-		# Run the simulation until the maximum time and get number of failures
+		# Run the simulation until the maximum time specified
 		env.run(until = maxTime)
 		
-		# Update all the statistics values by collecting this value
+		# Update all the statistics values by collecting its value from the run
 		f.collect( coll )
 
 		if verbose: print("Done run ", i, "\n")		

@@ -1,9 +1,9 @@
 # This is a simple base class for simulating random failures in simPy
 # It can be extended to create more sophisticated failures and recovery
-
+import randomProcess as rp
 
 # Class to model exponential failures
-class ExponentialFailure(ExponentialProcess):
+class ExponentialFailure(rp.ExponentialProcess):
 	"Uses exponential distribution to simulate random failure"
 
 	def __init__(self, env, params, name="Exponential Failure"):
@@ -13,7 +13,7 @@ class ExponentialFailure(ExponentialProcess):
 #End of class ExponentialFailure
 
 # Class to model uniform failures
-class UniformFailure(UniformProcess):
+class UniformFailure(rp.UniformProcess):
 	"Uses uniform distribution to simulate random failure"
 
 	def __init__(self, env, params, name="Uniform Failure"):
@@ -24,7 +24,7 @@ class UniformFailure(UniformProcess):
 #End of class UniformFailure
 
 # Class to model Weibull failures
-class WeibullFailure(WeibullProcess):
+class WeibullFailure(rp.WeibullProcess):
 	"Uses weibull distribution to simulate random failure"
 
 	def __init__(self, env, params, name="Weibull Failure"):
@@ -34,41 +34,8 @@ class WeibullFailure(WeibullProcess):
 
 #End of class WeibullFailure
 
-# Done with simple failure classes. From now on, we'll define composite processes
-
-# Simulates a collection of processes executing in parallel with each other. The processes are independent.
-class ParallelProcess(RandomProcess):
-	"Simulates a process consisting of multiple parallel processes each independent of the other"
-
-	def __init__(self, env, params, name="Multiple"):
-		# Initialize processes based on the params
-		self.processes = []
-		super().__init__(env, params, name)
-
-	def trigger(self):
-		"Emulate triggering of events of any of the parallel processes"
-		
-		# Get the failures of each process as timeout events
-		events = [ ]
-		for process in self.processes:
-			events.append( process.trigger() )
-		
-		# Choose the first of the trigerring events
-		triggerEvent = AnyOf( self.env, events) 	
-		# if self.debug: print(triggerEvent)
-		
-		return( triggerEvent )
-
-	def __str__(self):
-		res = self.name + " parallel [ "
-		for process in self.processes:
-			res += str(process)
-		res += " ]"
-
-# End of class ParallelProcess
-
 # Parallel exponential failure processeses
-class ParallelExponentialFailure(ParallelProcess, ExponentialFailure):
+class ParallelExponentialFailure(rp.ParallelProcess, ExponentialFailure):
 	"Simulates multiple parallel process failures each with an exponential failure distribution"
 
 	def __init__(self, env, params, name="N-Exponential"):
@@ -85,41 +52,8 @@ class ParallelExponentialFailure(ParallelProcess, ExponentialFailure):
 
 # End of class ParallelExponential	
 
-# Abstract Class to simulate multiple sequential processes including recovery
-class SequentialProcess(RandomProcess):
-	"Simulates multiple sequential processes happening one after another"
-	
-	def __init__(self, env, params, name="Sequential"):
-		super().__init__(env, params, name)
-		self.sequence = params.sequence
-		self.currentIndex = 0	# current process Index in the sequence
-		self.currentProcess = self.sequence[ self.currentIndex ]	
-
-	def trigger(self):
-		"Wrap the time to yield in a timeOut object and return it"
-
-		# Iterate over the sequence. Return current process and update currentIndex to next cyclically
-		self.currentProcess = self.sequence[ self.currentIndex ]
-		self.currentIndex = (self.currentIndex + 1) % len(self.sequence)
-
-		# Call the currentProcesse's trigger method to get the TimeOut object
-		return self.currentProcess.trigger()
-	
-	def __str__(self):
-		res = self.name + " sequential [ "
-		for process in self.sequence:
-			res += str(process)
-		res += " ]"
-
-	def updateStatistics(self, waitTime, count):
-		"Function to update statistics for each process"
-		# Update the statistics for the current process (as defined inthe  trigger)
-		self.currentProcess.updateStatistics(waitTime, count)
-
-# End of class SequentialProcess
-
 # Class to model exponential recovery times
-class ExponentialRecovery(ExponentialProcess):
+class ExponentialRecovery(rp.ExponentialProcess):
 	"Simulates exponential recovery times"
 
 	def __init__(self, env, params, name="Exponential Recovery"):
@@ -129,8 +63,7 @@ class ExponentialRecovery(ExponentialProcess):
 #End of class ExponentialRecovery
 
 # Class that simulates a 2-stage failure and recovery process (both of which are exponential)
-# This derives from the Sequential Process class above
-class TwoStageFailureRecovery(SequentialProcess):
+class TwoStageFailureRecovery(rp.SequentialProcess):
 	"Simulates a 2-stage  failure-recovery process with exponentially distributed times"
 
 	def __init__(self, env, params, name="2Exp-Failure-Recovery"):
@@ -150,8 +83,7 @@ class TwoStageFailureRecovery(SequentialProcess):
 #End of class TwoStageFailureRecovery 
 
 # Class that simulates a 3-stage failure and recovery process (both of which are exponential)
-# This derives from the Sequential Process class above
-class ThreeStageFailureRecovery(SequentialProcess):
+class ThreeStageFailureRecovery(rp.SequentialProcess):
 	"Simulates a 3-stage failure-recovery-recovery process with exponentially distributed times"
 
 	def __init__(self, env, params, name="3Exp-Failure-Recovery"):
@@ -172,6 +104,6 @@ class ThreeStageFailureRecovery(SequentialProcess):
 #End of class ThreeStageFailureRecovery
 
 # Class for n-stage Failures and m-stage Recovery, where n and m are parameters 
-class ThreeStageFailureRecovery(SequentialProcess):
+class MultiStageFailureRecovery(rp.SequentialProcess):
 	pass
 

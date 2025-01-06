@@ -118,3 +118,69 @@ class WeibullProcess(RandomProcess):
 		return self.name + " alpha = " + str(self.alpha) + " beta = " + str(self.beta)	
 
 #End of class WeibullProcess
+
+# Simulates a collection of processes executing in parallel with each other. The processes are independent.
+class ParallelProcess(RandomProcess):
+	"Simulates a process consisting of multiple parallel processes each independent of the other"
+
+	def __init__(self, env, params, name="Multiple"):
+		# Initialize processes based on the params
+		self.processes = []
+		super().__init__(env, params, name)
+
+	def trigger(self):
+		"Emulate triggering of events of any of the parallel processes"
+		
+		# Get the failures of each process as timeout events
+		events = [ ]
+		for process in self.processes:
+			events.append( process.trigger() )
+		
+		# Choose the first of the trigerring events
+		triggerEvent = AnyOf( self.env, events) 	
+		# if self.debug: print(triggerEvent)
+		
+		return( triggerEvent )
+
+	def __str__(self):
+		res = self.name + " parallel [ "
+		for process in self.processes:
+			res += str(process)
+		res += " ]"
+
+# End of class ParallelProcess
+
+# Siimulate multiple sequential processes - the processes run one after the other and wrap around in the end
+class SequentialProcess(RandomProcess):
+	"Simulates multiple sequential processes happening one after another"
+	
+	def __init__(self, env, params, name="Sequential"):
+		super().__init__(env, params, name)
+		self.sequence = params.sequence
+		self.currentIndex = 0	# current process Index in the sequence
+		self.currentProcess = self.sequence[ self.currentIndex ]	
+
+	def trigger(self):
+		"Wrap the time to yield in a timeOut object and return it"
+
+		# Iterate over the sequence. Return current process and update currentIndex to next cyclically
+		self.currentProcess = self.sequence[ self.currentIndex ]
+		self.currentIndex = (self.currentIndex + 1) % len(self.sequence)
+
+		# Call the currentProcesse's trigger method to get the TimeOut object
+		return self.currentProcess.trigger()
+	
+	def __str__(self):
+		res = self.name + " sequential [ "
+		for process in self.sequence:
+			res += str(process)
+		res += " ]"
+
+	def updateStatistics(self, waitTime, count):
+		"Function to update statistics for each process"
+		# Update the statistics for the current process (as defined inthe  trigger)
+		self.currentProcess.updateStatistics(waitTime, count)
+
+# End of class SequentialProcess
+
+
