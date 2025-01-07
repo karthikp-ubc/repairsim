@@ -122,25 +122,36 @@ class ParallelFailureRecovery(FailureRecovery):
 
 # End of ParallelFailureRecovery
 
-class TwoBranchExponentialFailure(rp.BranchingProcess):
+# Class for simulating failures with two branches, both of which are exponentially distributed but one has multiple processes. Both have recovery.
+class TwoBranchExponentialFailureRecovery(rp.BranchingProcess):
 	
 	def initBranches(self, env, params):
-		params.branches = [ ExponentialFailure(env, params, "Fail-branch1"), ExponentialFailure(env, params, "Fail-branch2") ]
+		"Initialize the different branches of the distribution"
 		branchProb = params.branchProb	# We assume the branch probability is specified as a parameter
 
+		singleFailRecovery = FailureRecovery(env, params, "Fail-branch1")		# Simple failure recovery process
+		multipleFailRecovery = ParallelFailureRecovery(env, params, "Fail-branch2")	# Parallel failure recovery process
+
 		# Order the probabilites in ascending order for passing to the BranchingProcess
+		# We keep the multiple failure recovery process as the lower probability one always
 		if branchProb < 0.5:
 			params.probabilities = [ branchProb, 1 - branchProb ]
+			params.branches = [ multipleFailRecovery, singleFailRecovery ]
 		else:
 			params.probabilities = [ 1 - branchProb, branchProb ]
+			params.branches = [ singleFailRecovery, multipleFailRecovery ]
 
 	def __init__(self, env, params, name="Branching-Exponential-Failure"):
 		"Initialize the branches for the process"
 		
 		self.initBranches(env, params)
 		super().__init__(env, params, name)
+		if self.debug: print("Branches: ", self.branches, "CDF: ", self.cdf)
 
-	#def collect(self, coll):
-	#	pass
+	def collect(self, coll):
+		# FIXME: This should wigh each process by its probability
+		for process in self.branches:
+			process.collect(coll)
+		# coll.weight
 	
-# End of class BranchingExponential	
+# End of class TwoBranchExponentialFailureRecovery	

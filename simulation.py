@@ -11,7 +11,8 @@ failureTypes = {
 			"exponential_fr":	rf.FailureRecovery,
 			"exponential_frr":	rf.FailureTwoStageRecovery,
 			"n_exponential_fr":	rf.ParallelFailureRecovery,
-			"branching":		rf.TwoBranchExponentialFailure
+			"branching":		rf.TwoBranchExponentialFailureRecovery,
+			"":			None
 }	
 
 # Main function for simulation; needs maxRuns and maxTime to be specified in params, as well as failureType

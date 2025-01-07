@@ -10,10 +10,10 @@ verbose = False
 graph= False
 #distribution = "n_exponential_fr"
 distribution = "branching"
-branchProb = 0.25
+branchProb = 0.3
 
 recovery_rate = 1
-num_process = 10
+num_process = 2
 
 
 # End of simulation parameters

@@ -173,7 +173,7 @@ class SequentialProcess(RandomProcess):
 
 		# Call the currentProcesse's trigger method to get the TimeOut object
 		currentEvent = self.currentProcess.trigger()
-		if self.debug: print(self.name, "Trigerring event ", currentEvent)
+		if self.debug: print(self.name, "Triggerring event ", currentEvent)
 		return currentEvent
 	
 	def __str__(self):
@@ -213,17 +213,27 @@ class BranchingProcess(RandomProcess):
 		"Wrap the time to yield in a timeOut object and return it"
 		# Generate a random no bet. 0 and 1 and choose a branch based on the CDF 
 		n = random.random()
-		currentProcess = 0
-		# NOTE: This only works beacause the probabilities are sorted in increasing order 
+		if self.debug: print("Random no. generated", n)
+		self.currentProcess = 0
+
+		# Choose the branch corresponding to the random no. based on the CDF 
 		for i in range( len(self.branches) ):
 			if n < self.cdf[i]:
-				currentProcess = self.branches[i]
-		
+				self.currentProcess = self.branches[i]
+				break
+
 		# We have chosen the branch process for trigerring in currentProcess
+		if self.debug: print(self.name, "Choosing branch ", self.currentProcess)
+		
 		# Call the currentProcesse's trigger method to get the TimeOut object
-		currentEvent = currentProcess.trigger()
-		if self.debug: print(self.name, "Trigerring event ", currentEvent)
+		currentEvent = self.currentProcess.trigger()
+		if self.debug: print(self.name, "Triggerring event ", currentEvent)
 		return currentEvent
+
+	def updateStatistics(self, waitTime, count):
+		"Function to update statistics for each process"
+		# Update the statistics for the current process (as defined in the trigger)
+		self.currentProcess.updateStatistics(waitTime, count)
 
 # End of class BranchingProcess
 
