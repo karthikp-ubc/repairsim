@@ -190,4 +190,41 @@ class SequentialProcess(RandomProcess):
 
 # End of class SequentialProcess
 
+# Simulate branching process that takes one path or another with distinct probabilities
+# NOTE: The probabilities are specified by the user and are assumed to sum to a total of 1
+# We also assume that the branches are sorted in INCREASING order of their probabilities
+class BranchingProcess(RandomProcess):
+	"Simulates branching processes in a probabilistic manner"
+	
+	def __init__(self, env, params, name = "Branching"):
+		super().__init__(env, params, name)
+		self.branches = params.branches
+		
+		# Calculate the CDF of the branches based on probabilities
+		self.cdf = []
+		sum = 0
+		# We assume the params.probabilities has same length as self.branches
+		for i in range( len(self.branches) ):
+			sum += params.probabilities[i]
+			self.cdf.append( sum )
+		# FIXME: Assert that the sum of probabilities is 1
+
+	def trigger(self):
+		"Wrap the time to yield in a timeOut object and return it"
+		# Generate a random no bet. 0 and 1 and choose a branch based on the CDF 
+		n = random.random()
+		currentProcess = 0
+		# NOTE: This only works beacause the probabilities are sorted in increasing order 
+		for i in range( len(self.branches) ):
+			if n < self.cdf[i]:
+				currentProcess = self.branches[i]
+		
+		# We have chosen the branch process for trigerring in currentProcess
+		# Call the currentProcesse's trigger method to get the TimeOut object
+		currentEvent = currentProcess.trigger()
+		if self.debug: print(self.name, "Trigerring event ", currentEvent)
+		return currentEvent
+
+# End of class BranchingProcess
+
 # TODO: Add a process that requires ALL its subprocesses to finish before it does

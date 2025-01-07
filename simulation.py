@@ -8,9 +8,10 @@ failureTypes = {
 			"uniform": 		rf.UniformFailure,
 			"weibull":		rf.WeibullFailure,
 			"n_exponential": 	rf.ParallelExponentialFailure,
-			"exponential_fr":	rf.TwoStageFailureRecovery,
-			"exponential_frr":	rf.ThreeStageFailureRecovery,
-			"n_exponential_fr":	rf.ParallelFailureRecovery
+			"exponential_fr":	rf.FailureRecovery,
+			"exponential_frr":	rf.FailureTwoStageRecovery,
+			"n_exponential_fr":	rf.ParallelFailureRecovery,
+			"branching":		rf.TwoBranchExponentialFailure
 }	
 
 # Main function for simulation; needs maxRuns and maxTime to be specified in params, as well as failureType

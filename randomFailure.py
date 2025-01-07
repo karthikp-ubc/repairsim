@@ -63,14 +63,14 @@ class ExponentialRecovery(rp.ExponentialProcess):
 #End of class ExponentialRecovery
 
 # Class that simulates a 2-stage failure and recovery process (both of which are exponential)
-class TwoStageFailureRecovery(rp.SequentialProcess):
+class FailureRecovery(rp.SequentialProcess):
 	"Simulates a 2-stage  failure-recovery process with exponentially distributed times"
 
 	def initSequence(self, env, params):
 		"Initialize the sequence of stages"
 		params.sequence = [ ExponentialFailure(env, params), ExponentialRecovery(env, params) ]
 
-	def __init__(self, env, params, name="2Exp-Failure-Recovery"):
+	def __init__(self, env, params, name="Exp-Failure-Recovery"):
 	
 		# Initialize the process sequence before calling the sequential process constructor
 		self.initSequence(env, params)
@@ -87,7 +87,7 @@ class TwoStageFailureRecovery(rp.SequentialProcess):
 #End of class TwoStageFailureRecovery 
 
 # Class that simulates a 3-stage failure and recovery process (both of which are exponential)
-class ThreeStageFailureRecovery(TwoStageFailureRecovery):
+class FailureTwoStageRecovery(FailureRecovery):
 	"Simulates a 3-stage failure-recovery-recovery process with exponentially distributed times"
 
 	def initSequence(self, env, params):
@@ -95,7 +95,7 @@ class ThreeStageFailureRecovery(TwoStageFailureRecovery):
 		# FIXME: Currently, both recovery processes have the same MTTR - we should make this configurable
 		params.sequence = [ ExponentialFailure(env, params, "Fail"), ExponentialRecovery(env, params, "Recover1"), ExponentialRecovery(env, params, "Recover2") ]
 
-	def __init__(self, env, params, name="3Exp-Failure-Recovery"):
+	def __init__(self, env, params, name="Exp-Failure-TwoRecovery"):
 		super().__init__(env, params, name)
 
 	def collect(self, coll):
@@ -109,7 +109,7 @@ class ThreeStageFailureRecovery(TwoStageFailureRecovery):
 #End of class ThreeStageFailureRecovery
 
 # Class for n-parallel Failures and Recovery (it has two stages: parallel failure, followed by recovery)
-class ParallelFailureRecovery(TwoStageFailureRecovery):
+class ParallelFailureRecovery(FailureRecovery):
 	"Simulates a multi-process failure and sequential recovery process"
 
 	def initSequence(self, env, params):
@@ -120,4 +120,27 @@ class ParallelFailureRecovery(TwoStageFailureRecovery):
 	def __init__(self, env, params, name="Parallel-Failure-Recovery"):
 		super().__init__(env, params, name)
 
-# End of ParallelFailureRecovery	
+# End of ParallelFailureRecovery
+
+class TwoBranchExponentialFailure(rp.BranchingProcess):
+	
+	def initBranches(self, env, params):
+		params.branches = [ ExponentialFailure(env, params, "Fail-branch1"), ExponentialFailure(env, params, "Fail-branch2") ]
+		branchProb = params.branchProb	# We assume the branch probability is specified as a parameter
+
+		# Order the probabilites in ascending order for passing to the BranchingProcess
+		if branchProb < 0.5:
+			params.probabilities = [ branchProb, 1 - branchProb ]
+		else:
+			params.probabilities = [ 1 - branchProb, branchProb ]
+
+	def __init__(self, env, params, name="Branching-Exponential-Failure"):
+		"Initialize the branches for the process"
+		
+		self.initBranches(env, params)
+		super().__init__(env, params, name)
+
+	#def collect(self, coll):
+	#	pass
+	
+# End of class BranchingExponential	
