@@ -76,14 +76,15 @@ class FailureRecovery(rp.SequentialProcess):
 		self.initSequence(env, params)
 		super().__init__(env, params, name)
 
-	def collect(self, coll):
+	def getStatistics(self):
 		# Collect the fraction uptime (indicates availability)
 		# FIXME: We should make this generic so it works on any number of processes
 		
 		upTime = self.sequence[0].waitTime
 		downTime = self.sequence[1].waitTime
-		coll.collect( upTime / (upTime + downTime) )
-
+		totalTime = upTime + downTime
+		return ( upTime / totalTime if totalTime>0 else 0 )
+			
 #End of class TwoStageFailureRecovery 
 
 # Class that simulates a 3-stage failure and recovery process (both of which are exponential)
@@ -98,13 +99,14 @@ class FailureTwoStageRecovery(FailureRecovery):
 	def __init__(self, env, params, name="Exp-Failure-TwoRecovery"):
 		super().__init__(env, params, name)
 
-	def collect(self, coll):
+	def getStatistics(self):
 		# Collect the fraction uptime (indicates availability)
 		# FIXME: We should make this generic so it works on any number of processes
 		
 		upTime = self.sequence[0].waitTime
 		downTime = self.sequence[1].waitTime + self.sequence[2].waitTime
-		coll.collect( upTime / (upTime + downTime) )
+		totalTime = upTime + downTime
+		return ( upTime / totalTime if totalTime>0 else 0 )
 
 #End of class ThreeStageFailureRecovery
 
@@ -114,7 +116,7 @@ class ParallelFailureRecovery(FailureRecovery):
 
 	def initSequence(self, env, params):
 		"Initialize the sequence of stages"
-		# FIXME: Currently, both recovery processes have the same MTTR - we should make this configurable
+		# FIXME: Currently, all failure processes have the same MTTF - we should make this configurable
 		params.sequence = [ ParallelExponentialFailure(env, params), ExponentialRecovery(env, params) ]
 	
 	def __init__(self, env, params, name="Parallel-Failure-Recovery"):
@@ -133,13 +135,12 @@ class TwoBranchExponentialFailureRecovery(rp.BranchingProcess):
 		multipleFailRecovery = ParallelFailureRecovery(env, params, "Fail-branch2")	# Parallel failure recovery process
 
 		# Order the probabilites in ascending order for passing to the BranchingProcess
-		# We keep the multiple failure recovery process as the lower probability one always
 		if branchProb < 0.5:
 			params.probabilities = [ branchProb, 1 - branchProb ]
 			params.branches = [ multipleFailRecovery, singleFailRecovery ]
 		else:
 			params.probabilities = [ 1 - branchProb, branchProb ]
-			params.branches = [ singleFailRecovery, multipleFailRecovery ]
+			params.branches = [ multipleFailRecovery, singleFailRecovery ]
 
 	def __init__(self, env, params, name="Branching-Exponential-Failure"):
 		"Initialize the branches for the process"
@@ -148,10 +149,13 @@ class TwoBranchExponentialFailureRecovery(rp.BranchingProcess):
 		super().__init__(env, params, name)
 		if self.debug: print("Branches: ", self.branches, "CDF: ", self.cdf)
 
-	def collect(self, coll):
-		# FIXME: This should wigh each process by its probability
-		for process in self.branches:
-			process.collect(coll)
-		# coll.weight
-	
+	def getStatistics(self):
+		# FIXME: This should weight each process by its probability
+		totalAvailability = 0
+		numProcesses = len(self.branches)
+		for i in range(numProcesses):
+			process = self.branches[i]
+			totalAvailability += self.probabilities[i] * process.getStatistics()
+		return (totalAvailability / numProcesses)
+			
 # End of class TwoBranchExponentialFailureRecovery	

@@ -69,12 +69,16 @@ class RandomProcess(object):
 			prevTime = self.env.now
 
 			if self.debug: print("Done", self.name, " Time = %.2f" % self.env.now)
+	
+	def getStatistics(self):
+		return ( self.waitTime / self.count )
+
 
 	def collect(self, stats):
 		"Collect the statistics for the simulation run"
 		# Collect the statistics for average wait time per arrival
 		# This can be overridden by derived classes
-		stats.collect( self.waitTime / self.count )
+		stats.collect( self.getStatistics() ) 
 
 #End of class RandomProcess
 
@@ -179,7 +183,7 @@ class SequentialProcess(RandomProcess):
 	def __str__(self):
 		res = self.name + " sequential [ "
 		for process in self.sequence:
-			res += str(process)
+			res += str(process) + " , "
 		res += " ]"
 		return res
 
@@ -199,6 +203,7 @@ class BranchingProcess(RandomProcess):
 	def __init__(self, env, params, name = "Branching"):
 		super().__init__(env, params, name)
 		self.branches = params.branches
+		self.probabilities = params.probabilities
 		
 		# Calculate the CDF of the branches based on probabilities
 		self.cdf = []
