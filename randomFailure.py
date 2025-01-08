@@ -134,13 +134,9 @@ class TwoBranchExponentialFailureRecovery(rp.BranchingProcess):
 		singleFailRecovery = FailureRecovery(env, params, "Fail-branch1")		# Simple failure recovery process
 		multipleFailRecovery = ParallelFailureRecovery(env, params, "Fail-branch2")	# Parallel failure recovery process
 
-		# Order the probabilites in ascending order for passing to the BranchingProcess
-		if branchProb < 0.5:
-			params.probabilities = [ branchProb, 1 - branchProb ]
-			params.branches = [ multipleFailRecovery, singleFailRecovery ]
-		else:
-			params.probabilities = [ 1 - branchProb, branchProb ]
-			params.branches = [ multipleFailRecovery, singleFailRecovery ]
+		# Populate the probabilities 
+		params.probabilities = [ branchProb, 1 - branchProb ]
+		params.branches = [ multipleFailRecovery, singleFailRecovery ]
 
 	def __init__(self, env, params, name="Branching-Exponential-Failure"):
 		"Initialize the branches for the process"
@@ -150,12 +146,12 @@ class TwoBranchExponentialFailureRecovery(rp.BranchingProcess):
 		if self.debug: print("Branches: ", self.branches, "CDF: ", self.cdf)
 
 	def getStatistics(self):
-		# FIXME: This should weight each process by its probability
+		# This should weight each process by its probability
 		totalAvailability = 0
 		numProcesses = len(self.branches)
 		for i in range(numProcesses):
 			process = self.branches[i]
 			totalAvailability += self.probabilities[i] * process.getStatistics()
-		return (totalAvailability / numProcesses)
+		return totalAvailability
 			
 # End of class TwoBranchExponentialFailureRecovery	

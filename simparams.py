@@ -8,10 +8,10 @@ maxRuns = 100
 maxTime = 1000
 verbose = False
 graph= False
-#distribution = "exponential_fr"
+#distribution = "n_exponential_fr"
 
 distribution = "branching"
-branchProb = 0.5 # Probability of taking the branch
+branchProb = 0.3 # Probability of taking the branch
 
 # All recovery processes have the same rate
 recovery_rate = 1
