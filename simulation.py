@@ -1,39 +1,19 @@
 # Main function that calls the sumulator with a set of parameters, and performs maxRuns runs, each for a time of maxTime
-import randomFailure as rf
+
+import randomFailure
 import simpy
 
-# Mapping from failure distributions to failure types (add new failures here)
-failureTypes = { 
-			"exponential": 		rf.ExponentialFailure,
-			"uniform": 		rf.UniformFailure,
-			"weibull":		rf.WeibullFailure,
-			"n_exponential": 	rf.ParallelExponentialFailure,
-			"exponential_fr":	rf.FailureRecovery,
-			"exponential_frr":	rf.FailureTwoStageRecovery,
-			"n_exponential_fr":	rf.ParallelFailureRecovery,
-			"branching":		rf.TwoBranchExponentialFailureRecovery,
-			"":			None
-}	
-
-# Main function for simulation; needs maxRuns and maxTime to be specified in params, as well as failureType
-def simulate(params, coll):
+def simulate(params, failureType, coll):
 	"Simulate the run with params"
 
 	# Initialize the overall simulation parameters first
 	verbose = params.verbose 
-	distribution = params.distribution
 	maxRuns = params.maxRuns
 	maxTime = params.maxTime
 
 	if verbose: print("Starting simulation with parameters", params)
 
-	# Get the failure type for the simulation	
-	try:
-		failureType = failureTypes[ distribution ]
-	except: 
-		raise NameError("Unknown failure distribution " + str(distribution) )			
-	
-	if verbose: print("Simulating Failure type = ", failureType)
+	if verbose: print("\tFailure type = ", failureType)
 		
 	# Run the simulations each for a total of maxRun times 
 	# FIXME: Make this configurable based on the confidence intervals

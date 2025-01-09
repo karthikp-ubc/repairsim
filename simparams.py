@@ -7,16 +7,16 @@ increment_rate = 0.1
 maxRuns = 100
 maxTime = 1000
 verbose = False
-graph= False
-#distribution = "n_exponential_fr"
+graph= True
+distribution = "exponential_fr"
 
-distribution = "branching"
-branchProb = 0.3 # Probability of taking the branch
+#distribution = "branching"
+#branchProb = 0.5 # Probability of taking the branch
 
 # All recovery processes have the same rate
 recovery_rate = 1
 
 # Multiple failure processes
-num_process = 10
+# num_process = 10
 
 # End of simulation parameters

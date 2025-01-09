@@ -1,13 +1,26 @@
 # Does a parameter sweep of the different failure rates and observes the results
 
 import simparams as sp
-import numpy as np
-import matplotlib.pyplot as plt
 import simulation
 import statsim
 import collector
+import graph
+import randomFailure as rf
 
-def plot_graph(sp, stats):
+# Mapping from failure distributions to failure types (add new failures here)
+failureTypes = {
+                        "exponential":          rf.ExponentialFailure,
+                        "uniform":              rf.UniformFailure,
+                        "weibull":              rf.WeibullFailure,
+                        "n_exponential":        rf.ParallelExponentialFailure,
+                        "exponential_fr":       rf.FailureRecovery,
+                        "exponential_frr":      rf.FailureTwoStageRecovery,
+                        "n_exponential_fr":     rf.ParallelFailureRecovery,
+                        "branching":            rf.TwoBranchExponentialFailureRecovery,
+                        "":                     None
+}
+
+def plot_graph(sp, stats, xlabel, ylabel):
 	"Plot the statistics as line graphs over the swept range"
 
 	t = np.arange(sp.start_rate, sp.end_rate + sp.increment_rate, sp.increment_rate)
@@ -23,18 +36,29 @@ def plot_graph(sp, stats):
 	# Done for
 
 	# Label the axes, legend and show the graph
-	plt.xlabel('Failure rate')
-	plt.ylabel('Number of failures')
+	plt.xlabel(xlabel)
+	plt.ylabel(ylabel)
 	plt.legend()
 	plt.show()
 
-# End of function
+# End of plot_graph
 
+def getFailureType(distribution):
+	"Get the failure type from the parameter file"
+	try:
+                failureType = failureTypes[ distribution ]
+	except:
+                raise NameError("Unknown failure distribution " + str(distribution) )
+
+	return failureType
 
 def sweep_range(sp, stats):
 	"Sweep the range of failure rates and simulate each rate many times"
 	
 	rate = sp.start_rate
+	failureType = getFailureType(sp.distribution)
+
+	# Vary the rate incrementally until the end_rate
 	while (rate <= sp.end_rate):
 
 		# make a new entry for the rate
@@ -44,7 +68,7 @@ def sweep_range(sp, stats):
 		sp.failure_rate = rate  
 		
 		try:
-			simulation.simulate( sp, stats )
+			simulation.simulate( sp, failureType, stats )
 		except:
 			raise NameError("Undefined parameter name")
 	
@@ -69,5 +93,6 @@ if __name__=="__main__":
 	print(stats)
 
 	# Plot the graph if needed
-	if sp.graph: plot_graph(sp, stats)
+	if sp.graph: 
+		graph.plot_graph(sp, stats, statsim.simpleStats.keys(), "Failure rate", "Availability")
 
