@@ -38,10 +38,10 @@ class Collector:
 	def extract(self,stat_name):
 		# Extract all the statistics corresponding to statname
 		res = []
-		print("Extracting ", stat_name)
+		# print("Extracting ", stat_name)
 		for (name, stat) in self.stats.items():
 			for (statName, statValue) in stat.items():
-				print(statName)
+				# print(statName)
 				if (statName==stat_name):
 					res.append(statValue)
 		return res		
