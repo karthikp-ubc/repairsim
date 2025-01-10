@@ -124,7 +124,7 @@ class ParallelFailureRecovery(FailureRecovery):
 
 # End of ParallelFailureRecovery
 
-# Class for simulating failures with two branches, both of which are exponentially distributed but one has multiple processes. Both have recovery.
+# Class for simulating failures with two branches, both of which are exponentially distributed but one has multiple processes. Both have (identical) recovery.
 class TwoBranchExponentialFailureRecovery(rp.BranchingProcess):
 	
 	def initBranches(self, env, params):
